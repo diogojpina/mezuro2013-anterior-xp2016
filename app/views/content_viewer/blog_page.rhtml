@@ -1,0 +1,13 @@
+<% add_rss_feed_to_head(@page.name, @page.feed.url)  if @page.blog? && @page.feed %>
+
+<%= content_tag('em', _('(external feed was not loaded yet)'), :id => 'external-feed-info', :class => 'metadata') if @page.blog? && @page.external_feed && @page.external_feed.enabled && @page.external_feed.fetched_at.nil? %>
+
+<div>
+  <div class='blog-description'>
+    <%= @page.body %>
+  </div>
+</div>
+<hr class="pre-posts"/>
+<div class="blog-posts">
+  <%= (@page.empty? ? content_tag('em', _('(no posts)')) : list_posts(@posts, @page.visualization_format)) %>
+</div>

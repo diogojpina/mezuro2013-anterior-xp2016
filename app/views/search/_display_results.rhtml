@@ -1,0 +1,40 @@
+<div id="search-results" class="<%= !multiple_search? ? 'only-one-result-box' : 'multiple-results-boxes' %>">
+  <% @order.each do |name| %>
+    <% results = @results[name] %>
+    <% empty = results.nil? || results.empty? %>
+
+    <div class="search-results-<%= name %> search-results-box <%= "search-results-empty" if empty %>">
+      <% if not empty %>
+        <% partial = partial_for_class(results.first.class.class_name.constantize) %>
+
+        <% if multiple_search? %>
+          <h3><%= @names[name] %></h3>
+          <% if results.total_entries > SearchController::MULTIPLE_SEARCH_LIMIT %>
+            <%= link_to(_('see all (%d)') % results.total_entries, params.merge(:action => name), :class => 'see-more' ) %>
+          <% end %>
+        <% end %>
+
+        <div class="search-results-innerbox search-results-type-<%= partial %> <%= 'common-profile-list-block' if partial == 'profile' %>">
+          <ul>
+          <% results.each do |hit| %>
+            <%= render :partial => partial_for_class(hit.class), :object => hit %>
+          <% end %>
+          </ul>
+        </div>
+      <% else %>
+        <% if multiple_search? %>
+          <h3><%= @names[name] %></h3>
+        <% end %>
+
+        <div class="search-results-innerbox search-results-type-empty">
+          <div> <%= _('None') %> </div>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <div style="clear:both"></div>
+
+  <%= add_zoom_to_images %>
+</div>
+

@@ -1,0 +1,2 @@
+default: --color --format progress --strict --tags ~@selenium --tags ~@selenium-fixme --tags ~@fixme --exclude features/support/selenium.rb -r features/support -r features/step_definitions
+selenium: --strict --tags @selenium -r features/support -r features/step_definitions

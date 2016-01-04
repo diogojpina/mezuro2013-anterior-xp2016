@@ -1,0 +1,13 @@
+<h2>
+  <%= _('Tagged with "%s"') % content_tag('code', @tag) %>
+</h2>
+
+<% button_bar do %>
+  <%= button('back', _('Back to tag cloud'), :action => 'tags') %>
+<% end %>
+
+<% cache_timeout(@tag_cache_key, 4.hour) do %>
+  <%= display_results %>
+
+  <div style="clear: both"></div>
+<% end %>

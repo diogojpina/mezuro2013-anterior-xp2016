@@ -1,0 +1,143 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          noosfero
+# Required-Start:    $remote_fs
+# Required-Stop:     $remote_fs
+# Should-Start:      postgresql
+# Should-Stop:       postgresql
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Example initscript
+# Description:       This file should be used to construct scripts to be
+#                    placed in /etc/init.d.
+### END INIT INFO
+
+# Sample init.d script for noosfero.
+# 
+# This script was based on the skeleton init.d script present in a Debian
+# GNU/Linux system (sid), on Sat Feb 16 11:12:03 BRT 2008. It must be placed in
+# /etc/init.d/ (or whatever place your system uses for startup scripts), and you must create a file /etc/default/noosfero defining the variable
+# 
+# Author: Antonio Terceiro <terceiro@colivre.coop.br>
+
+# Do NOT "set -e"
+
+# PATH should only include /usr/* if it runs after the mountnfs.sh script
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
+DESC="Noosfero web platform"
+NAME=noosfero
+SCRIPTNAME=/etc/init.d/$NAME
+
+# default values
+NOOSFERO_DIR=/var/lib/noosfero/current
+NOOSFERO_USER=noosfero
+
+# Read configuration variable file if it is present
+[ -r /etc/default/$NAME ] && . /etc/default/$NAME
+
+# Load the VERBOSE setting and other rcS variables
+. /lib/init/vars.sh
+
+if [ -z "$NOOSFERO_DIR" ] || [ -z "$NOOSFERO_USER" ]; then
+  echo "NOOSFERO_DIR or NOOSFERO_USER not defined, noosfero not being started."
+  echo "Both variables must be defined in /etc/default/noosfero"
+  exit 0
+fi
+
+######################
+SOLR_PID_FILE=$NOOSFERO_DIR/tmp/pids/solr.production.pid
+
+main_script() {
+  cd $NOOSFERO_DIR
+  if [ "$NOOSFERO_USER" != "$USER" ]; then
+    su $NOOSFERO_USER -l -c "SOLR_DATA_PATH=/var/lib/noosfero-data/index ./script/production $1"
+  else
+    SOLR_DATA_PATH=/var/lib/noosfero-data/index ./script/production $1
+  fi
+}
+
+do_setup() {
+  # PID directories
+  if [ ! -d /var/run/noosfero ]; then
+    mkdir /var/run/noosfero
+    chown $NOOSFERO_USER:root /var/run/noosfero
+    chmod 755 /var/run/noosfero
+  fi
+
+  # Noosfero logs
+  if [ ! -d /var/log/noosfero ]; then
+    mkdir /var/log/noosfero
+    chown $NOOSFERO_USER:root /var/log/noosfero
+    chmod 750 /var/log/noosfero
+  fi
+
+  # Noosfero tmp directory
+  if [ ! -d /var/tmp/noosfero ]; then
+    mkdir /var/tmp/noosfero
+    chown $NOOSFERO_USER:root /var/tmp/noosfero
+    chmod 750 /var/tmp/noosfero
+  fi
+
+  # Solr directory
+  if [ ! -d /var/tmp/noosfero/solr ]; then
+    mkdir -p /var/tmp/noosfero/solr
+    chown $NOOSFERO_USER:root /var/tmp/noosfero/solr
+    chmod 750 /var/tmp/noosfero/solr
+  fi
+
+  # symlink the directories into Noosfero directory
+  if [ ! -e $NOOSFERO_DIR/tmp ]; then
+    ln -s /var/tmp/noosfero $NOOSFERO_DIR/tmp
+  fi
+  if [ ! -e $NOOSFERO_DIR/tmp/pids ]; then
+    ln -s /var/run/noosfero $NOOSFERO_DIR/tmp/pids
+  fi
+  if [ ! -e $NOOSFERO_DIR/log ]; then
+    ln -s /var/log/noosfero $NOOSFERO_DIR/log
+  fi
+}
+
+do_start() {
+
+  # FIXME should not test for solr only
+  if [ -e $SOLR_PID_FILE ]; then
+    echo 'noosfero already running, cannot start.'
+    exit 2
+  fi
+
+  do_setup
+
+  # actually start the service
+  main_script start
+}
+
+do_stop() {
+
+  # FIXME should not test for solr only
+  if [ ! -e $SOLR_PID_FILE ]; then
+    echo 'noosfero not running, cannot stop'
+    exit 2
+  fi
+
+  main_script stop
+}
+
+do_restart() {
+  do_stop
+  do_start
+}
+
+case "$1" in
+  start|stop|restart|setup)
+    do_$1
+    ;;
+  force-reload)
+    do_restart
+    ;;
+  *)
+    echo "Usage: $SCRIPTNAME {start|stop|restart|force-reload|setup}" >&2
+    exit 3
+    ;;
+esac
+
+:
